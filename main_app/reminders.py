@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 from django.db.models import Q
 
-from .models import EmailCredential, ServiceContract, ServiceStatus
+from .models import EmailCredential, EmailLog, ServiceContract, ServiceStatus
 
 
 @dataclass
@@ -89,13 +89,28 @@ class ReminderService:
                 f"Expiry date: {reminder.expiry_date} (status: {reminder.expiry_color})\n"
                 f"Payment due: {reminder.payment_due_date} (status: {reminder.payment_color})\n"
             )
-            EmailMessage(
-                subject,
-                body,
-                sender,
-                [reminder.recipient],
-                connection=connection,
-            ).send(fail_silently=True)
+            success = True
+            error_message = ""
+            try:
+                EmailMessage(
+                    subject,
+                    body,
+                    sender,
+                    [reminder.recipient],
+                    connection=connection,
+                ).send(fail_silently=False)
+            except Exception as exc:  # pragma: no cover - network failures are rare
+                success = False
+                error_message = str(exc)
+            EmailLog.objects.create(
+                contract_id=reminder.contract_id,
+                recipient=reminder.recipient,
+                sender=sender,
+                subject=subject,
+                body=body,
+                success=success,
+                error_message=error_message,
+            )
         return payloads
 
     def _color_for(self, days_remaining: int) -> str:

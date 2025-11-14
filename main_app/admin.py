@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 
-from .models import EmailCredential, ServiceContract, Vendor
+from .models import EmailCredential, EmailLog, ServiceContract, Vendor
 from .reminders import ReminderService
 
 
@@ -46,3 +46,27 @@ class EmailCredentialAdmin(admin.ModelAdmin):
     list_editable = ("is_active",)
     search_fields = ("name", "from_email", "smtp_host")
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(EmailLog)
+class EmailLogAdmin(admin.ModelAdmin):
+    list_display = ("contract", "recipient", "success", "created_at")
+    search_fields = ("recipient", "contract__service_name", "contract__vendor__name")
+    list_filter = ("success", "contract__status")
+    readonly_fields = (
+        "contract",
+        "recipient",
+        "sender",
+        "subject",
+        "body",
+        "success",
+        "error_message",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):  # pragma: no cover - admin integration
+        return False
+
+    def has_change_permission(self, request, obj=None):  # pragma: no cover
+        return False

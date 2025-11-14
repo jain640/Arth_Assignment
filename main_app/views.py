@@ -7,9 +7,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import ServiceContract, ServiceStatus, Vendor
+from .models import EmailLog, ServiceContract, ServiceStatus, Vendor
 from .reminders import ReminderService
 from .serializers import (
+    EmailLogSerializer,
     ReminderSerializer,
     ServiceContractSerializer,
     ServiceStatusUpdateSerializer,
@@ -79,3 +80,8 @@ class ReminderEmailTriggerView(APIView):
         payloads = ReminderService().send_notification_emails()
         serializer = ReminderSerializer([payload.as_dict() for payload in payloads], many=True)
         return Response({"sent": len(payloads), "reminders": serializer.data}, status=status.HTTP_200_OK)
+
+
+class ReminderEmailLogListView(generics.ListAPIView):
+    serializer_class = EmailLogSerializer
+    queryset = EmailLog.objects.select_related("contract", "contract__vendor")

@@ -92,3 +92,25 @@ class EmailCredential(TimestampedModel):
     @classmethod
     def get_active(cls) -> "EmailCredential | None":
         return cls.objects.filter(is_active=True).order_by("-updated_at").first()
+
+
+class EmailLog(TimestampedModel):
+    """Records every reminder email that the system attempts to send."""
+
+    contract = models.ForeignKey(
+        ServiceContract,
+        on_delete=models.CASCADE,
+        related_name="email_logs",
+    )
+    recipient = models.EmailField()
+    sender = models.EmailField()
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    success = models.BooleanField(default=False)
+    error_message = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover - simple representation
+        return f"Email to {self.recipient} for {self.contract.service_name}"

@@ -5,6 +5,7 @@ from .views import (
     ExpiringServiceList,
     PaymentDueServiceList,
     PingView,
+    ReminderEmailLogListView,
     ReminderEmailTriggerView,
     ReminderListView,
     ServiceContractViewSet,
@@ -25,5 +26,10 @@ urlpatterns = [
         "services/reminders/send-emails/",
         ReminderEmailTriggerView.as_view(),
         name="services-reminders-send",
+    ),
+    path(
+        "services/reminders/email-logs/",
+        ReminderEmailLogListView.as_view(),
+        name="services-reminders-email-logs",
     ),
 ]

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import ServiceContract, ServiceStatus, Vendor
+from .models import EmailLog, ServiceContract, ServiceStatus, Vendor
 
 
 class ServiceContractSerializer(serializers.ModelSerializer):
@@ -75,3 +75,25 @@ class ReminderSerializer(serializers.Serializer):
     days_until_expiry = serializers.IntegerField()
     days_until_payment = serializers.IntegerField()
     recipient = serializers.EmailField()
+
+
+class EmailLogSerializer(serializers.ModelSerializer):
+    vendor = serializers.CharField(source="contract.vendor.name", read_only=True)
+    service_name = serializers.CharField(source="contract.service_name", read_only=True)
+
+    class Meta:
+        model = EmailLog
+        fields = [
+            "id",
+            "contract",
+            "vendor",
+            "service_name",
+            "recipient",
+            "sender",
+            "subject",
+            "body",
+            "success",
+            "error_message",
+            "created_at",
+        ]
+        read_only_fields = fields
