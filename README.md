@@ -86,3 +86,46 @@ python manage.py test
 ```
 
 (Automated tests require Django/DRF to be installed; install from `requirements.txt` first.)
+
+## How to test the app locally
+Follow the sequence below to exercise the main requirements end-to-end on your workstation:
+
+1. **Start a fresh database**
+   ```bash
+   rm db.sqlite3  # optional but keeps things clean when re-testing
+   python manage.py migrate
+   ```
+
+2. **Create a user for API + admin access**
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+3. **Run the development server**
+   ```bash
+   python manage.py runserver 0.0.0.0:8000
+   ```
+
+4. **Authenticate and call APIs**
+   - Obtain a JWT access token:
+     ```bash
+     http POST :8000/api/token/ username=<user> password=<password>
+     ```
+   - Use the returned token for all subsequent requests:
+     ```bash
+     http GET :8000/api/vendors/ "Authorization: Bearer <access-token>"
+     ```
+
+5. **Verify CRUD + filters**
+   - Create a vendor via `/api/vendors/` and a contract via `/api/services/`.
+   - Hit the filtered feeds `/api/services/expiring-soon/` and `/api/services/payment-due/` to confirm 15-day filtering.
+
+6. **Exercise reminder workflow**
+   - Call `POST /api/services/reminders/send-emails/` to trigger reminder emails (logged to console by default).
+   - Inspect `/api/services/reminders/email-logs/` or visit `/admin/main_app/emaillog/` to confirm log entries were created.
+   - (Optional) Run `python manage.py run_contract_reminders` to emulate the scheduled job.
+
+7. **Review the Django admin**
+   - Browse to `http://localhost:8000/admin/`, log in with the superuser, and manage Vendors, Service Contracts, Email Credentials, and Email Logs.
+
+Following the steps above verifies authentication, CRUD, pagination, expiring/payment filters, reminder dispatch, and the auditing trails locally.
