@@ -6,7 +6,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from .models import EmailCredential, EmailLog, ServiceContract, ServiceStatus, Vendor
-from .reminders import ReminderService
+from .reminders import ReminderReport, ReminderService
 
 
 class PingViewTests(TestCase):
@@ -98,3 +98,48 @@ class ReminderEmailLogTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["recipient"], log.recipient)
+
+
+class ReminderReportTests(TestCase):
+    def setUp(self):
+        self.vendor = Vendor.objects.create(
+            name="Vendor", contact_person="Casey", email="vendor@example.com", phone="0001"
+        )
+        today = date.today()
+        self.contract_red = ServiceContract.objects.create(
+            vendor=self.vendor,
+            service_name="Security Patrol",
+            start_date=today - timedelta(days=30),
+            expiry_date=today - timedelta(days=1),
+            payment_due_date=today + timedelta(days=5),
+            amount=5000,
+            status=ServiceStatus.ACTIVE,
+        )
+        self.contract_yellow = ServiceContract.objects.create(
+            vendor=self.vendor,
+            service_name="Cleaning",
+            start_date=today - timedelta(days=15),
+            expiry_date=today + timedelta(days=10),
+            payment_due_date=today + timedelta(days=7),
+            amount=2500,
+            status=ServiceStatus.PAYMENT_PENDING,
+        )
+
+    def test_build_report_counts_by_color(self):
+        service = ReminderService(window_days=15)
+        report = service.build_report()
+        self.assertIsInstance(report, ReminderReport)
+        self.assertEqual(report.total_contracts, 2)
+        self.assertEqual(report.totals_by_color["red"], 1)
+        self.assertEqual(report.totals_by_color["yellow"], 1)
+
+    def test_report_endpoint_returns_payloads(self):
+        client = APIClient()
+        user = get_user_model().objects.create_user(
+            username="reporter", password="testpass", email="reporter@example.com"
+        )
+        client.force_authenticate(user=user)
+        response = client.get(reverse("services-reminders-report"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["total_contracts"], 2)
+        self.assertEqual(len(response.data["payloads"]), 2)

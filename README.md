@@ -8,7 +8,7 @@ This project delivers the vendor and contract management requirements using Djan
 - Paginated listings for vendors and contracts.
 - Dedicated feeds for contracts expiring or with payments due in the next 15 days.
 - Contract status updates (Active, Expired, Payment Pending, Completed).
-- Reminder API + `run_contract_reminders` management command that compute color codes (green/yellow/red) for expiry/payment deadlines within 15 days and send notification emails.
+- Reminder API + report endpoint + `run_contract_reminders` management command that compute color codes (green/yellow/red) for expiry/payment deadlines within 15 days and send notification emails.
 - Email reminder logs exposed through the API and Django admin so stakeholders can audit who received which notification and when.
 - Django admin action to manually trigger the reminder workflow plus editable SMTP credentials so non-technical staff can manage reminder email settings.
 
@@ -25,6 +25,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser  # optional, for Django admin access
+python manage.py seed_demo_data  # optional, loads demo vendors + contracts
 python manage.py runserver 0.0.0.0:8000
 ```
 
@@ -51,6 +52,7 @@ Use the returned `access` token in the `Authorization: Bearer <token>` header. R
 | GET | `/api/services/expiring-soon/` | Contracts whose expiry date falls within the next 15 days. |
 | GET | `/api/services/payment-due/` | Contracts whose payment due date falls within the next 15 days. |
 | GET | `/api/services/reminders/` | Reminder payloads with expiry/payment color codes (green/yellow/red) for contracts within the reminder window. |
+| GET | `/api/services/reminders/report/` | Aggregated reminder report (generated date, color totals, payloads) for daily dashboards/jobs. |
 | POST | `/api/services/reminders/send-emails/` | Triggers reminder calculation and sends notification emails (console backend). |
 | GET | `/api/services/reminders/email-logs/` | Paginated reminder email log showing recipients, subjects, and delivery status. |
 
@@ -94,6 +96,7 @@ Follow the sequence below to exercise the main requirements end-to-end on your w
    ```bash
    rm db.sqlite3  # optional but keeps things clean when re-testing
    python manage.py migrate
+   python manage.py seed_demo_data --flush  # load demo vendors/contracts
    ```
 
 2. **Create a user for API + admin access**

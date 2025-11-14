@@ -12,6 +12,7 @@ from .reminders import ReminderService
 from .serializers import (
     EmailLogSerializer,
     ReminderSerializer,
+    ReminderReportSerializer,
     ServiceContractSerializer,
     ServiceStatusUpdateSerializer,
     VendorSerializer,
@@ -72,6 +73,13 @@ class ReminderListView(APIView):
     def get(self, request):
         payloads = ReminderService().build_reminder_payloads()
         serializer = ReminderSerializer([payload.as_dict() for payload in payloads], many=True)
+        return Response(serializer.data)
+
+
+class ReminderReportView(APIView):
+    def get(self, request):
+        report = ReminderService().build_report()
+        serializer = ReminderReportSerializer(report)
         return Response(serializer.data)
 
 

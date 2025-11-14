@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import EmailLog, ServiceContract, ServiceStatus, Vendor
+from .reminders import ReminderReport
 
 
 class ServiceContractSerializer(serializers.ModelSerializer):
@@ -75,6 +76,19 @@ class ReminderSerializer(serializers.Serializer):
     days_until_expiry = serializers.IntegerField()
     days_until_payment = serializers.IntegerField()
     recipient = serializers.EmailField()
+
+
+class ReminderReportSerializer(serializers.Serializer):
+    generated_on = serializers.DateField()
+    window_days = serializers.IntegerField()
+    total_contracts = serializers.IntegerField()
+    totals_by_color = serializers.DictField(child=serializers.IntegerField())
+    payloads = ReminderSerializer(many=True)
+
+    def to_representation(self, instance: ReminderReport | dict):
+        if isinstance(instance, ReminderReport):
+            instance = instance.as_dict()
+        return super().to_representation(instance)
 
 
 class EmailLogSerializer(serializers.ModelSerializer):
