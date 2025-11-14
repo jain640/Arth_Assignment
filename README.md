@@ -25,6 +25,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser  # optional, for Django admin access
+python manage.py seed_demo_data  # optional, loads demo vendors + contracts
 python manage.py runserver 0.0.0.0:8000
 ```
 
@@ -94,6 +95,7 @@ Follow the sequence below to exercise the main requirements end-to-end on your w
    ```bash
    rm db.sqlite3  # optional but keeps things clean when re-testing
    python manage.py migrate
+   python manage.py seed_demo_data --flush  # load demo vendors/contracts
    ```
 
 2. **Create a user for API + admin access**
