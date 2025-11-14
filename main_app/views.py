@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta  # used by service filter window calculations
 
 from django.utils import timezone
 from rest_framework import generics, status, viewsets
