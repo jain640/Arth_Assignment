@@ -76,6 +76,7 @@ The command reuses the same `ReminderService` used by the REST endpoints, keepin
 The Django admin (`/admin/`) exposes Vendor and ServiceContract models with helpful list filters and search fields, plus:
 
 - **Run reminder email dispatch now** action on the ServiceContract changelist to execute the `run_contract_reminders` workflow without touching the CLI.
+- **Reminder report dashboard** link on the ServiceContract changelist renders the same color-coded summary used by the API so admins can review at-risk contracts without leaving Django.
 - **Email credentials** section to add/edit SMTP connection details and enable/disable which credential set should be used when sending reminders.
 - **Email logs** section lists each reminder sent (recipient, subject, success/error message) for auditing and support.
 
