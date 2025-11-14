@@ -45,6 +45,8 @@ class ReminderReport:
     window_days: int
     total_contracts: int
     totals_by_color: dict
+    expiry_totals_by_color: dict
+    payment_totals_by_color: dict
     payloads: list[ReminderPayload]
 
     def as_dict(self) -> dict:
@@ -53,6 +55,8 @@ class ReminderReport:
             "window_days": self.window_days,
             "total_contracts": self.total_contracts,
             "totals_by_color": self.totals_by_color,
+            "expiry_totals_by_color": self.expiry_totals_by_color,
+            "payment_totals_by_color": self.payment_totals_by_color,
             "payloads": [payload.as_dict() for payload in self.payloads],
         }
 
@@ -98,14 +102,20 @@ class ReminderService:
     def build_report(self) -> ReminderReport:
         payloads = self.build_reminder_payloads()
         color_totals = {"red": 0, "yellow": 0, "green": 0}
+        expiry_totals = {"red": 0, "yellow": 0, "green": 0}
+        payment_totals = {"red": 0, "yellow": 0, "green": 0}
         for payload in payloads:
             dominant_color = self._dominant_color(payload)
             color_totals[dominant_color] += 1
+            expiry_totals[payload.expiry_color] += 1
+            payment_totals[payload.payment_color] += 1
         return ReminderReport(
             generated_on=date.today(),
             window_days=self.window_days,
             total_contracts=len(payloads),
             totals_by_color=color_totals,
+            expiry_totals_by_color=expiry_totals,
+            payment_totals_by_color=payment_totals,
             payloads=payloads,
         )
 

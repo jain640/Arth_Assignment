@@ -83,6 +83,8 @@ class ReminderReportSerializer(serializers.Serializer):
     window_days = serializers.IntegerField()
     total_contracts = serializers.IntegerField()
     totals_by_color = serializers.DictField(child=serializers.IntegerField())
+    expiry_totals_by_color = serializers.DictField(child=serializers.IntegerField())
+    payment_totals_by_color = serializers.DictField(child=serializers.IntegerField())
     payloads = ReminderSerializer(many=True)
 
     def to_representation(self, instance: ReminderReport | dict):

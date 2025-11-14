@@ -132,6 +132,9 @@ class ReminderReportTests(TestCase):
         self.assertEqual(report.total_contracts, 2)
         self.assertEqual(report.totals_by_color["red"], 1)
         self.assertEqual(report.totals_by_color["yellow"], 1)
+        self.assertEqual(report.expiry_totals_by_color["red"], 1)
+        self.assertEqual(report.expiry_totals_by_color["yellow"], 1)
+        self.assertEqual(report.payment_totals_by_color["yellow"], 2)
 
     def test_report_endpoint_returns_payloads(self):
         client = APIClient()
@@ -143,3 +146,5 @@ class ReminderReportTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["total_contracts"], 2)
         self.assertEqual(len(response.data["payloads"]), 2)
+        self.assertIn("expiry_totals_by_color", response.data)
+        self.assertIn("payment_totals_by_color", response.data)
