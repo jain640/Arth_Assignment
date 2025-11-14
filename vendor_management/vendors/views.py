@@ -12,6 +12,7 @@ from .serializers import (
     VendorSerializer,
     VendorWriteSerializer,
 )
+from .services import ReminderService
 
 
 class VendorViewSet(viewsets.ModelViewSet):
@@ -91,25 +92,16 @@ class ServiceContractViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='reminders')
     def reminders(self, request):
-        today = timezone.now().date()
-        horizon = today + timedelta(days=15)
-        queryset = self.get_queryset().filter(
-            Q(expiry_date__range=(today, horizon)) | Q(payment_due_date__range=(today, horizon))
-        )
-        reminders = []
-        for contract in queryset:
-            reminder = {
-                'service_id': contract.id,
-                'vendor': contract.vendor.name,
-                'service_name': contract.service_name,
-                'expiry_date': contract.expiry_date,
-                'payment_due_date': contract.payment_due_date,
-                'color_code': ServiceContractSerializer(contract).data['color_code'],
-                'email_subject': f"Reminder: {contract.service_name}",
-                'email_body': (
-                    f"Hi {contract.vendor.contact_person}, your service {contract.service_name} is approaching its"
-                    f" expiry/payment deadline."
-                ),
-            }
-            reminders.append(reminder)
+        reminders = ReminderService().generate_reminders()
         return Response({'count': len(reminders), 'results': reminders})
+
+    @action(detail=False, methods=['post'], url_path='reminders/send-emails')
+    def send_reminder_emails(self, request):
+        result = ReminderService().send_notifications()
+        return Response(
+            {
+                'sent': result['sent'],
+                'count': len(result['reminders']),
+                'results': result['reminders'],
+            }
+        )
