@@ -8,6 +8,7 @@ from .views import (
     ReminderEmailLogListView,
     ReminderEmailTriggerView,
     ReminderListView,
+    ReminderReportView,
     ServiceContractViewSet,
     VendorViewSet,
 )
@@ -22,6 +23,11 @@ urlpatterns = [
     path("services/expiring-soon/", ExpiringServiceList.as_view(), name="services-expiring"),
     path("services/payment-due/", PaymentDueServiceList.as_view(), name="services-payment-due"),
     path("services/reminders/", ReminderListView.as_view(), name="services-reminders"),
+    path(
+        "services/reminders/report/",
+        ReminderReportView.as_view(),
+        name="services-reminders-report",
+    ),
     path(
         "services/reminders/send-emails/",
         ReminderEmailTriggerView.as_view(),
