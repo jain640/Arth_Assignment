@@ -1,68 +1,81 @@
-# Core Django Starter
+# Vendor Management API (Django + DRF)
 
-This repository now ships a lightweight Django starter configured with a `core_project` site and a default `main_app` that exposes a `/ping` health-check endpoint. It is meant to demonstrate how to provision Django in the Codex execution environment with SQLite, migrations, and app registration pre-wired.
+This project delivers the vendor and contract management requirements using Django 5, Django REST Framework, and SimpleJWT for authentication. It exposes CRUD endpoints, pagination, expiring/payment-due filters, and reminder utilities (API + management command) that compute color-coded alerts and send notification emails via Django's console backend.
+
+## Features
+- JWT-protected CRUD for vendors and their service contracts.
+- Vendors list automatically embeds each vendor's **active** services.
+- Paginated listings for vendors and contracts.
+- Dedicated feeds for contracts expiring or with payments due in the next 15 days.
+- Contract status updates (Active, Expired, Payment Pending, Completed).
+- Reminder API + `run_contract_reminders` management command that compute color codes (green/yellow/red) for expiry/payment deadlines within 15 days and send notification emails.
 
 ## Requirements
 - Python 3.11+
 - `pip`
-- Internet access (or an alternate package source) to install Django 5.x and its dependencies.
+- Access to the packages listed in `requirements.txt` (Django, DRF, SimpleJWT). If PyPI is blocked, provide an internal mirror/wheelhouse.
 
-## Initial setup
+## Setup
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -r requirements.txt  # installs Django and supporting libraries
-python manage.py migrate         # applies initial SQLite migrations
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser  # optional, for Django admin access
 python manage.py runserver 0.0.0.0:8000
 ```
 
-> **Note:** If your environment restricts access to PyPI, provide a local wheelhouse or mirror so `pip install -r requirements.txt` can succeed.
+The API will be available at `http://localhost:8000/api/` and the browsable DRF interface mirrors the endpoints listed below.
 
-## Project layout
-```
-core_project/
-    __init__.py
-    asgi.py
-    settings.py
-    urls.py
-    wsgi.py
-main_app/
-    __init__.py
-    admin.py
-    apps.py
-    migrations/
-    models.py
-    urls.py
-    views.py
-manage.py
-requirements.txt
+## Authentication
+Issue a JWT before calling any API (except `/api/ping/`):
+
+```bash
+http POST :8000/api/token/ username=<user> password=<password>
 ```
 
-### Settings highlights
-- `INSTALLED_APPS` already includes `main_app` alongside the default Django contrib apps.
-- SQLite is the default database via `db.sqlite3` at the repository root.
-- `ALLOWED_HOSTS` is set to `"*"` for convenience during local development; tighten this before deploying.
+Use the returned `access` token in the `Authorization: Bearer <token>` header. Refresh tokens are available at `/api/token/refresh/`.
 
-## Default routes
-| Method | Path   | Description         |
-| ------ | ------ | ------------------- |
-| GET    | `/ping` | Health check; returns `{ "message": "pong" }` |
+## API catalog
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| GET | `/api/ping/` | Anonymous health check returning `{ "message": "pong" }`. |
+| GET/POST | `/api/vendors/` | Paginated vendor list + create (includes active services). |
+| GET/PUT/PATCH/DELETE | `/api/vendors/{id}/` | Vendor detail & CRUD. |
+| GET/POST | `/api/services/` | Paginated service contract list + create. |
+| GET/PUT/PATCH/DELETE | `/api/services/{id}/` | Contract detail & CRUD. |
+| POST | `/api/services/{id}/update-status/` | Update a contract's status (`ACTIVE`, `EXPIRED`, `PAYMENT_PENDING`, `COMPLETED`). |
+| GET | `/api/services/expiring-soon/` | Contracts whose expiry date falls within the next 15 days. |
+| GET | `/api/services/payment-due/` | Contracts whose payment due date falls within the next 15 days. |
+| GET | `/api/services/reminders/` | Reminder payloads with expiry/payment color codes (green/yellow/red) for contracts within the reminder window. |
+| POST | `/api/services/reminders/send-emails/` | Triggers reminder calculation and sends notification emails (console backend). |
 
-The `ping` view lives in `main_app/views.py` and is wired through `main_app/urls.py`, which is then included by `core_project/urls.py`.
+Pagination is enabled for the vendor and service viewsets (default page size = 10; override with `?page=<n>&page_size=<m>`).
 
-## Running checks & migrations
-Once Django is installed, you can run:
+## Reminder logic
+- Reminder window: 15 days (configurable via `ReminderService(window_days=...)`).
+- Color codes: `green` (> 15 days away), `yellow` (0-15 days), `red` (past due).
+- Email backend: console (`settings.EMAIL_BACKEND`), making it easy to observe outgoing messages locally.
+
+### Scheduled usage
+To run the reminder workflow outside of the API (e.g., daily cron):
+
+```bash
+python manage.py run_contract_reminders
+```
+
+The command reuses the same `ReminderService` used by the REST endpoints, keeping the reminder logic centralized.
+
+## Django admin
+The Django admin (`/admin/`) exposes Vendor and ServiceContract models with helpful list filters and search fields, making it easy to inspect or seed data manually.
+
+## Testing & checks
+Once dependencies are installed, run the usual Django checks/migrations:
+
 ```bash
 python manage.py check
-python manage.py migrate
+python manage.py test
 ```
 
-These commands ensure the settings are valid and that the SQLite schema is up to date.
-
-## Extending the starter
-- Add models to `main_app/models.py` and run `python manage.py makemigrations main_app` to create migrations.
-- Register new URL patterns inside `main_app/urls.py` or add additional apps and include their URL configs from `core_project/urls.py`.
-- Swap SQLite for Postgres or another backend by editing the `DATABASES` block in `core_project/settings.py`.
-
-This scaffold provides a clean baseline for building out the vendor-management functionality or any other Django-based service.
+(Automated tests require Django/DRF to be installed; install from `requirements.txt` first.)

@@ -1,0 +1,77 @@
+from rest_framework import serializers
+
+from .models import ServiceContract, ServiceStatus, Vendor
+
+
+class ServiceContractSerializer(serializers.ModelSerializer):
+    vendor_name = serializers.CharField(source="vendor.name", read_only=True)
+
+    class Meta:
+        model = ServiceContract
+        fields = [
+            "id",
+            "vendor",
+            "vendor_name",
+            "service_name",
+            "start_date",
+            "expiry_date",
+            "payment_due_date",
+            "amount",
+            "status",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
+
+class ActiveServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceContract
+        fields = [
+            "id",
+            "service_name",
+            "expiry_date",
+            "payment_due_date",
+            "amount",
+            "status",
+        ]
+
+
+class VendorSerializer(serializers.ModelSerializer):
+    active_services = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Vendor
+        fields = [
+            "id",
+            "name",
+            "contact_person",
+            "email",
+            "phone",
+            "status",
+            "active_services",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at", "active_services"]
+
+    def get_active_services(self, vendor: Vendor):
+        services = vendor.services.filter(status=ServiceStatus.ACTIVE)
+        return ActiveServiceSerializer(services, many=True).data
+
+
+class ServiceStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=ServiceStatus.choices)
+
+
+class ReminderSerializer(serializers.Serializer):
+    contract_id = serializers.IntegerField()
+    vendor = serializers.CharField()
+    service_name = serializers.CharField()
+    expiry_date = serializers.DateField()
+    payment_due_date = serializers.DateField()
+    expiry_color = serializers.CharField()
+    payment_color = serializers.CharField()
+    days_until_expiry = serializers.IntegerField()
+    days_until_payment = serializers.IntegerField()
+    recipient = serializers.EmailField()
