@@ -1,0 +1,85 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:main_app_servicecontract_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; {% translate 'Reminder report' %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="module">
+    <h1>{% translate 'Reminder report' %}</h1>
+    <p>
+      {% blocktranslate with generated_on=report_data.generated_on window=report_data.window_days %}
+        Generated on {{ generated_on }} for the next {{ window }} day(s).
+      {% endblocktranslate %}
+    </p>
+    <p>
+      {% blocktranslate with total=report_data.total_contracts %}
+        Total contracts in reminder window: {{ total }}
+      {% endblocktranslate %}
+    </p>
+  </div>
+
+  <div class="module">
+    <h2>{% translate 'Color totals' %}</h2>
+    <table id="summary" class="admin-report">
+      <thead>
+        <tr>
+          <th>{% translate 'Color' %}</th>
+          <th>{% translate 'Overall' %}</th>
+          <th>{% translate 'Expiry' %}</th>
+          <th>{% translate 'Payment' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for color in color_rows %}
+          <tr>
+            <th class="{{ color.name }}">{{ color.name|capfirst }}</th>
+            <td>{{ color.overall }}</td>
+            <td>{{ color.expiry }}</td>
+            <td>{{ color.payment }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="module">
+    <h2>{% translate 'Reminder payloads' %}</h2>
+    {% if report.payloads %}
+      <table class="admin-report">
+        <thead>
+          <tr>
+            <th>{% translate 'Vendor' %}</th>
+            <th>{% translate 'Service' %}</th>
+            <th>{% translate 'Expiry date' %}</th>
+            <th>{% translate 'Expiry status' %}</th>
+            <th>{% translate 'Payment due' %}</th>
+            <th>{% translate 'Payment status' %}</th>
+            <th>{% translate 'Recipient' %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payload in report.payloads %}
+            <tr>
+              <td>{{ payload.vendor }}</td>
+              <td>{{ payload.service_name }}</td>
+              <td>{{ payload.expiry_date }}</td>
+              <td class="{{ payload.expiry_color }}">{{ payload.expiry_color|capfirst }}</td>
+              <td>{{ payload.payment_due_date }}</td>
+              <td class="{{ payload.payment_color }}">{{ payload.payment_color|capfirst }}</td>
+              <td>{{ payload.recipient }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>{% translate 'No contracts are currently within the reminder window.' %}</p>
+    {% endif %}
+  </div>
+{% endblock %}

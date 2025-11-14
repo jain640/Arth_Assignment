@@ -1,4 +1,6 @@
 from django.contrib import admin, messages
+from django.template.response import TemplateResponse
+from django.urls import path
 from django.utils.translation import gettext_lazy as _
 
 from .models import EmailCredential, EmailLog, ServiceContract, Vendor
@@ -25,6 +27,7 @@ class ServiceContractAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     autocomplete_fields = ("vendor",)
     actions = ("run_contract_reminders",)
+    change_list_template = "admin/main_app/servicecontract/change_list.html"
 
     def run_contract_reminders(self, request, queryset):
         service = ReminderService()
@@ -38,6 +41,44 @@ class ServiceContractAdmin(admin.ModelAdmin):
     run_contract_reminders.short_description = _(
         "Run reminder email dispatch now"
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "reminder-report/",
+                self.admin_site.admin_view(self.reminder_report_view),
+                name="main_app_servicecontract_reminder_report",
+            )
+        ]
+        return custom_urls + urls
+
+    def reminder_report_view(self, request):
+        report = ReminderService().build_report()
+        report_dict = report.as_dict()
+        color_rows = []
+        for color in ("red", "yellow", "green"):
+            color_rows.append(
+                {
+                    "name": color,
+                    "overall": report_dict["totals_by_color"].get(color, 0),
+                    "expiry": report_dict["expiry_totals_by_color"].get(color, 0),
+                    "payment": report_dict["payment_totals_by_color"].get(color, 0),
+                }
+            )
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "report": report,
+            "report_data": report_dict,
+            "color_rows": color_rows,
+            "title": _("Reminder report"),
+        }
+        return TemplateResponse(
+            request,
+            "admin/main_app/servicecontract/reminder_report.html",
+            context,
+        )
 
 
 @admin.register(EmailCredential)

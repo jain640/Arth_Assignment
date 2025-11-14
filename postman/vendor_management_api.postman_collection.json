@@ -1,0 +1,301 @@
+{
+  "info": {
+    "name": "Vendor Management API",
+    "description": "Comprehensive Postman collection for the Vendor + Service Contract management API, including JWT authentication, CRUD, reminder utilities, and reporting endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {"key": "base_url", "value": "http://localhost:8000"},
+    {"key": "username", "value": "admin"},
+    {"key": "password", "value": "adminpass"},
+    {"key": "access_token", "value": ""},
+    {"key": "refresh_token", "value": ""},
+    {"key": "vendor_id", "value": "1"},
+    {"key": "service_id", "value": "1"}
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Obtain Token",
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{base_url}}/api/token/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.access) { pm.collectionVariables.set('access_token', json.access); }",
+                  "if (json.refresh) { pm.collectionVariables.set('refresh_token', json.refresh); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": "{{base_url}}/api/token/refresh/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.access) { pm.collectionVariables.set('access_token', json.access); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Ping",
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "GET",
+            "url": "{{base_url}}/api/ping/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendors",
+      "item": [
+        {
+          "name": "List Vendors",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/vendors/"
+          }
+        },
+        {
+          "name": "Create Vendor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"contact_person\": \"Jane Doe\",\n  \"email\": \"acme@example.com\",\n  \"phone\": \"+1-555-0100\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{base_url}}/api/vendors/"
+          }
+        },
+        {
+          "name": "Retrieve Vendor",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/vendors/{{vendor_id}}/"
+          }
+        },
+        {
+          "name": "Update Vendor (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"contact_person\": \"Jane Smith\",\n  \"email\": \"acme@example.com\",\n  \"phone\": \"+1-555-0110\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{base_url}}/api/vendors/{{vendor_id}}/"
+          }
+        },
+        {
+          "name": "Update Vendor (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INACTIVE\"\n}"
+            },
+            "url": "{{base_url}}/api/vendors/{{vendor_id}}/"
+          }
+        },
+        {
+          "name": "Delete Vendor",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/vendors/{{vendor_id}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Service Contracts",
+      "item": [
+        {
+          "name": "List Services",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/services/"
+          }
+        },
+        {
+          "name": "Create Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendor\": {{vendor_id}},\n  \"service_name\": \"Network Maintenance\",\n  \"start_date\": \"2024-01-01\",\n  \"expiry_date\": \"2024-12-31\",\n  \"payment_due_date\": \"2024-12-15\",\n  \"amount\": \"12500.00\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{base_url}}/api/services/"
+          }
+        },
+        {
+          "name": "Retrieve Service",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/services/{{service_id}}/"
+          }
+        },
+        {
+          "name": "Update Service (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendor\": {{vendor_id}},\n  \"service_name\": \"Network Maintenance\",\n  \"start_date\": \"2024-01-01\",\n  \"expiry_date\": \"2024-12-31\",\n  \"payment_due_date\": \"2024-12-15\",\n  \"amount\": \"12500.00\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{base_url}}/api/services/{{service_id}}/"
+          }
+        },
+        {
+          "name": "Update Service (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"15000.00\",\n  \"status\": \"PAYMENT_PENDING\"\n}"
+            },
+            "url": "{{base_url}}/api/services/{{service_id}}/"
+          }
+        },
+        {
+          "name": "Delete Service",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/services/{{service_id}}/"
+          }
+        },
+        {
+          "name": "Update Service Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+            },
+            "url": "{{base_url}}/api/services/{{service_id}}/update-status/"
+          }
+        },
+        {
+          "name": "Services Expiring Soon",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/services/expiring-soon/"
+          }
+        },
+        {
+          "name": "Services With Payment Due",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/services/payment-due/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reminders & Reporting",
+      "item": [
+        {
+          "name": "Reminder Payloads",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/services/reminders/"
+          }
+        },
+        {
+          "name": "Reminder Report",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/services/reminders/report/"
+          }
+        },
+        {
+          "name": "Send Reminder Emails",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/services/reminders/send-emails/"
+          }
+        },
+        {
+          "name": "Reminder Email Logs",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/services/reminders/email-logs/"
+          }
+        }
+      ]
+    }
+  ]
+}

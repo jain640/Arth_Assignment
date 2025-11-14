@@ -148,3 +148,31 @@ class ReminderReportTests(TestCase):
         self.assertEqual(len(response.data["payloads"]), 2)
         self.assertIn("expiry_totals_by_color", response.data)
         self.assertIn("payment_totals_by_color", response.data)
+
+
+class AdminReminderReportViewTests(TestCase):
+    def setUp(self):
+        self.vendor = Vendor.objects.create(
+            name="Admin Vendor", contact_person="Ava", email="ava@example.com", phone="1111"
+        )
+        today = date.today()
+        self.contract = ServiceContract.objects.create(
+            vendor=self.vendor,
+            service_name="Catering",
+            start_date=today - timedelta(days=20),
+            expiry_date=today + timedelta(days=2),
+            payment_due_date=today + timedelta(days=3),
+            amount=7500,
+            status=ServiceStatus.ACTIVE,
+        )
+        self.admin_user = get_user_model().objects.create_superuser(
+            username="adminreport", email="adminreport@example.com", password="pass1234"
+        )
+
+    def test_admin_reminder_report_page_renders(self):
+        client = Client()
+        client.force_login(self.admin_user)
+        response = client.get(reverse("admin:main_app_servicecontract_reminder_report"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Reminder report")
+        self.assertContains(response, self.contract.service_name)
