@@ -9,6 +9,7 @@ This project delivers the vendor and contract management requirements using Djan
 - Dedicated feeds for contracts expiring or with payments due in the next 15 days.
 - Contract status updates (Active, Expired, Payment Pending, Completed).
 - Reminder API + `run_contract_reminders` management command that compute color codes (green/yellow/red) for expiry/payment deadlines within 15 days and send notification emails.
+- Django admin action to manually trigger the reminder workflow plus editable SMTP credentials so non-technical staff can manage reminder email settings.
 
 ## Requirements
 - Python 3.11+
@@ -56,7 +57,7 @@ Pagination is enabled for the vendor and service viewsets (default page size = 1
 ## Reminder logic
 - Reminder window: 15 days (configurable via `ReminderService(window_days=...)`).
 - Color codes: `green` (> 15 days away), `yellow` (0-15 days), `red` (past due).
-- Email backend: console (`settings.EMAIL_BACKEND`), making it easy to observe outgoing messages locally.
+- Email backend: console (`settings.EMAIL_BACKEND`) by default, but production SMTP credentials can be entered via the **Email credentials** admin section. The reminder service automatically uses the most recently updated active credential (host, port, TLS/SSL, username/password, sender email).
 
 ### Scheduled usage
 To run the reminder workflow outside of the API (e.g., daily cron):
@@ -68,7 +69,10 @@ python manage.py run_contract_reminders
 The command reuses the same `ReminderService` used by the REST endpoints, keeping the reminder logic centralized.
 
 ## Django admin
-The Django admin (`/admin/`) exposes Vendor and ServiceContract models with helpful list filters and search fields, making it easy to inspect or seed data manually.
+The Django admin (`/admin/`) exposes Vendor and ServiceContract models with helpful list filters and search fields, plus:
+
+- **Run reminder email dispatch now** action on the ServiceContract changelist to execute the `run_contract_reminders` workflow without touching the CLI.
+- **Email credentials** section to add/edit SMTP connection details and enable/disable which credential set should be used when sending reminders.
 
 ## Testing & checks
 Once dependencies are installed, run the usual Django checks/migrations:

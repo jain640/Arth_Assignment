@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, get_connection
 from django.db.models import Q
 
-from .models import ServiceContract, ServiceStatus
+from .models import EmailCredential, ServiceContract, ServiceStatus
 
 
 @dataclass
@@ -42,8 +42,9 @@ class ReminderPayload:
 class ReminderService:
     """Encapsulates reminder calculations and notification dispatch."""
 
-    def __init__(self, window_days: int = 15):
+    def __init__(self, window_days: int = 15, credentials: EmailCredential | None = None):
         self.window_days = window_days
+        self._credentials = credentials
 
     def _base_queryset(self):
         today = date.today()
@@ -78,6 +79,8 @@ class ReminderService:
 
     def send_notification_emails(self) -> list[ReminderPayload]:
         payloads = self.build_reminder_payloads()
+        connection = self._connection()
+        sender = self._sender_email()
         for reminder in payloads:
             subject = f"Contract reminder: {reminder.service_name}"
             body = (
@@ -86,13 +89,13 @@ class ReminderService:
                 f"Expiry date: {reminder.expiry_date} (status: {reminder.expiry_color})\n"
                 f"Payment due: {reminder.payment_due_date} (status: {reminder.payment_color})\n"
             )
-            send_mail(
+            EmailMessage(
                 subject,
                 body,
-                settings.DEFAULT_FROM_EMAIL,
+                sender,
                 [reminder.recipient],
-                fail_silently=True,
-            )
+                connection=connection,
+            ).send(fail_silently=True)
         return payloads
 
     def _color_for(self, days_remaining: int) -> str:
@@ -101,3 +104,29 @@ class ReminderService:
         if days_remaining <= self.window_days:
             return "yellow"
         return "green"
+
+    def _connection(self):
+        credentials = self._get_credentials()
+        if not credentials:
+            return get_connection()
+        backend = "django.core.mail.backends.smtp.EmailBackend"
+        return get_connection(
+            backend=backend,
+            host=credentials.smtp_host,
+            port=credentials.smtp_port,
+            username=credentials.username or None,
+            password=credentials.password or None,
+            use_tls=credentials.use_tls,
+            use_ssl=credentials.use_ssl,
+        )
+
+    def _sender_email(self) -> str:
+        credentials = self._get_credentials()
+        if credentials:
+            return credentials.from_email
+        return settings.DEFAULT_FROM_EMAIL
+
+    def _get_credentials(self) -> EmailCredential | None:
+        if self._credentials is None:
+            self._credentials = EmailCredential.get_active()
+        return self._credentials

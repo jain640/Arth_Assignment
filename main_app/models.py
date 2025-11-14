@@ -63,3 +63,32 @@ class ServiceContract(TimestampedModel):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.vendor.name} - {self.service_name}"
+
+
+class EmailCredential(TimestampedModel):
+    """Stores SMTP credentials used for reminder notifications."""
+
+    name = models.CharField(max_length=100, default="Primary")
+    from_email = models.EmailField(help_text="Sender address for reminder emails")
+    smtp_host = models.CharField(max_length=255)
+    smtp_port = models.PositiveIntegerField(default=587)
+    use_tls = models.BooleanField(default=True)
+    use_ssl = models.BooleanField(default=False)
+    username = models.CharField(max_length=255, blank=True)
+    password = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Only active credentials are used when dispatching reminders.",
+    )
+
+    class Meta:
+        verbose_name = "Email credential"
+        verbose_name_plural = "Email credentials"
+        ordering = ["-updated_at"]
+
+    def __str__(self) -> str:  # pragma: no cover - simple representation
+        return self.name
+
+    @classmethod
+    def get_active(cls) -> "EmailCredential | None":
+        return cls.objects.filter(is_active=True).order_by("-updated_at").first()
