@@ -39,6 +39,28 @@ class ReminderPayload:
         }
 
 
+@dataclass
+class ReminderReport:
+    generated_on: date
+    window_days: int
+    total_contracts: int
+    totals_by_color: dict
+    expiry_totals_by_color: dict
+    payment_totals_by_color: dict
+    payloads: list[ReminderPayload]
+
+    def as_dict(self) -> dict:
+        return {
+            "generated_on": self.generated_on,
+            "window_days": self.window_days,
+            "total_contracts": self.total_contracts,
+            "totals_by_color": self.totals_by_color,
+            "expiry_totals_by_color": self.expiry_totals_by_color,
+            "payment_totals_by_color": self.payment_totals_by_color,
+            "payloads": [payload.as_dict() for payload in self.payloads],
+        }
+
+
 class ReminderService:
     """Encapsulates reminder calculations and notification dispatch."""
 
@@ -76,6 +98,26 @@ class ReminderService:
                 )
             )
         return payloads
+
+    def build_report(self) -> ReminderReport:
+        payloads = self.build_reminder_payloads()
+        color_totals = {"red": 0, "yellow": 0, "green": 0}
+        expiry_totals = {"red": 0, "yellow": 0, "green": 0}
+        payment_totals = {"red": 0, "yellow": 0, "green": 0}
+        for payload in payloads:
+            dominant_color = self._dominant_color(payload)
+            color_totals[dominant_color] += 1
+            expiry_totals[payload.expiry_color] += 1
+            payment_totals[payload.payment_color] += 1
+        return ReminderReport(
+            generated_on=date.today(),
+            window_days=self.window_days,
+            total_contracts=len(payloads),
+            totals_by_color=color_totals,
+            expiry_totals_by_color=expiry_totals,
+            payment_totals_by_color=payment_totals,
+            payloads=payloads,
+        )
 
     def send_notification_emails(self) -> list[ReminderPayload]:
         payloads = self.build_reminder_payloads()
@@ -119,6 +161,14 @@ class ReminderService:
         if days_remaining <= self.window_days:
             return "yellow"
         return "green"
+
+    def _dominant_color(self, payload: ReminderPayload) -> str:
+        priority = {"red": 0, "yellow": 1, "green": 2}
+        return min(
+            payload.expiry_color,
+            payload.payment_color,
+            key=lambda color: priority[color],
+        )
 
     def _connection(self):
         credentials = self._get_credentials()
